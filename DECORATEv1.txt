@@ -1,0 +1,140 @@
+Actor ComboFist : Fist replaces Fist
+{
+	Weapon.BobStyle inverse
+	Weapon.BobSpeed 1.5
+	+NOALERT
+	states
+	{
+		Select:
+			PUNI A 1 A_Raise
+		loop
+		Deselect:
+			PUNG GFEDCBA 1 A_Lower
+			PUNI A 1 A_Lower
+		goto deselect + 7//Loop on PUNI A.
+		Ready:
+			PUNI A 1 A_WeaponReady
+			PUNG ACDFG 1 A_WeaponReady//Guarding ready.
+			PUNG G 0 A_GiveInventory("Guard", 1)
+		goto ready + 5//Loop on PUNG G.
+		Fire:
+			PUNG GFEDCB 1//Open guard.
+			PUNG A 1 A_Jump(128, 3)//50% chance to start with a powerful left or right hook.
+			PUNF AB 1
+			goto hold + 10//Goto right hook.
+			PUNF AB 1
+			PUNL ABC 2
+			PUNL D 2 A_JumpIfInventory("PowerStrength", 1, 12)//If Berserked goto super left hook at PUNL E.
+			PUNL E 1 A_CustomPunch(2, false, 0, "BrassPuff", 0, 0, 0, "", "hit", "swing")//Power left hook.
+			PUNL F 1
+			PUNL G 2
+			PUNL HIJKL 1
+			PUNL M 2 A_Refire//Cycle quick jabs.
+			PUNF BA 1 A_Refire//Begin reguard if not firing.
+		goto ready//Raise guard and get ready.
+		//Berserk:
+			PUNL E 1 A_CustomPunch(20, false, 0, "BrassPuff", 0, 0, 0, "", "hit", "swing")//Super left hook.
+		goto fire + 17
+		Hold:
+			PUNL ABC 1
+			PUNL D 1 A_JumpIfInventory("PowerStrength", 1, 21)//If Berserked goto super jab at PUNL E.
+			PUNL E 2 A_CustomPunch(1, false, 0, "BrassPuff", 0, 0, 0, "", "hit", "swing")//Jab.
+			PUNL IJK 1
+			PUNL L 1 A_Jump(64, 2)//Throw in some hooks.
+			PUNL M 2 A_Refire//More jabs.
+			PUNR AB 1
+			PUNR C 1 A_JumpIfInventory("PowerStrength", 1, 13)//If Berserked goto super right hook at PUNR D.
+			PUNR D 1 A_CustomPunch(3, false, 0, "BrassPuff", 0, 0, 0, "", "hit", "swing2")//Power right hook.
+			PUNR E 2
+			PUNR FGH 2
+			PUNR IJK 1
+			PUNR LMN 1 A_Refire//Quick recovery.
+		goto ready
+		//Berserk:
+			PUNL E 2 A_CustomPunch(10, false, 0, "BrassPuff", 0, 0, 0, "", "hit", "swing")//Super jab.
+		goto hold + 5//Return to PUNL I.
+			PUNR D 1 A_CustomPunch(30, false, 0, "BrassPuff", 0, 0, 0, "", "hit", "swing")//Super right hook.
+		goto hold + 14//Return to PUNR E.
+		altfire:
+			PUNB A 0 A_GiveInventory("UpBlock", 1)
+			PUNB A 1 A_PlaySound("block", 1, 0.25)
+			PUNB BC 1
+			PUNB D 3 A_Refire//Sustain block.
+			PUNB D 0 A_GiveInventory("DownBlock", 1)
+			PUNB CBA 1 A_WeaponReady//Retaliate.
+		goto ready + 5
+		althold:
+			PUNB D 0 A_GiveInventory("Block", 1)
+			PUNB D 1 A_WeaponReady(WRF_NOFIRE)//Enable bobbing, WRF_NOFIRE to ensure no awkward frame gaps.
+		goto altfire + 4
+ 	}
+}
+Actor TingPuff: BulletPuff{
+-NOGRAVITY
+gravity 0.5
+scale 0.125
+RenderStyle add
+}
+Actor BrassPuff
+{
++NOBLOCKMAP
+states
+{
+spawn:
+TNT1 A 0 nodelay A_PlaySound("punch2", 0, 0.25)
+TNT1 A 0 A_SpawnItemEx("TingPuff", 15, 0, 0, frandom(0, 5), frandom(-5, 5), frandom(-1, 5))
+TNT1 A 0 A_SpawnItemEx("TingPuff", 15, -1, -1, frandom(0, 5), frandom(-5, 5), frandom(-1, 5))
+TNT1 A 0 A_SpawnItemEx("TingPuff", 15, -1, 1, frandom(0, 5), frandom(-5, 5), frandom(-1, 5))
+TNT1 A 0 A_SpawnItemEx("TingPuff", 15, 1, 1, frandom(0, 5), frandom(-5, 5), frandom(-1, 5))
+TNT1 A 0 A_SpawnItemEx("TingPuff", 15, 1, -1, frandom(0, 5), frandom(-5, 5), frandom(-1, 5))
+TNT1 A 1 A_PlaySound("ting", 1)
+stop
+}
+}
+
+Actor PowerGuard : PowerProtection
+{
+  DamageFactor "Normal", 0.75
+  Inventory.Icon "GDICB0"
+}
+Actor PowerBlock : PowerProtection
+{
+  DamageFactor "Normal", 0.5
+  Inventory.Icon "GDICA0"
+}
+Actor Guard : PowerupGiver
+{
+  Inventory.PickupMessage "Guarding..."
+  Inventory.MaxAmount 0
+  Powerup.Type "Guard"
+  Powerup.Duration 2
+  +INVENTORY.AUTOACTIVATE
+}
+
+Actor Block : PowerupGiver
+{
+  Inventory.PickupMessage "Blocking..."
+  Inventory.MaxAmount 0
+  Powerup.Type "Block"
+  Powerup.Duration 2
+  +INVENTORY.AUTOACTIVATE
+}
+Actor UpBlock : Block
+{
+  Powerup.Duration 6
+}
+Actor DownBlock : Block
+{
+  Powerup.Duration 3
+}
+Actor Comboserk : Berserk replaces Berserk
+{
+  States
+  {
+  Pickup:
+    TNT1 A 0 A_GiveInventory("PowerStrength")
+    TNT1 A 0 HealThing(100, 0)
+    TNT1 A 0 A_SelectWeapon("ComboFist")
+    Stop
+  }
+}
